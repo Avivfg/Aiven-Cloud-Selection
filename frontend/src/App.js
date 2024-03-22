@@ -9,15 +9,19 @@ const App = () => {
   const [userLatitude, setUserLatitude] = useState(null);
   const [userLongitude, setUserLongitude] = useState(null);
   const [sortByDistance, setSortByDistance] = useState(false);
+  const [locationPermission, setLocationPermission] = useState(false);
+  const [showLocationAlert, setShowLocationAlert] = useState(false);
 
   const getUserLocation = () => {
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        setLocationPermission(true);
         setUserLatitude(position.coords.latitude);
         setUserLongitude(position.coords.longitude);
       },
       (error) => {
-        console.error("Error getting user location:", error);
+        setShowLocationAlert(true);
+        // console.error("Error getting user location:", error);
       }
     );
   };
@@ -55,11 +59,15 @@ const App = () => {
   const handleProviderSelect = (selectedOptions) => {
     if (selectedOptions.length > 0) {
       setSelectedProviders(selectedOptions);
-      fetchCloudsByProvider(selectedOptions);
+      fetchCloudsByProvider(selectedOptions, sortByDistance);
     } else {
       setSelectedProviders([]);
-      fetchCloudsByProvider(allProviders);
+      fetchCloudsByProvider(allProviders, sortByDistance);
     }
+  };
+
+  const handleAlertClose = () => {
+    setShowLocationAlert(false);
   };
 
   const handleToggleChange = () => {
@@ -85,8 +93,6 @@ const App = () => {
         </div>
       </nav>
       <div className="container mt-4">
-        <p>userLatitude is {userLatitude}</p>
-        <p>userLongitude is {userLongitude}</p>
         <h1 className="mb-4">Clouds</h1>
 
         {allProviders.length > 0 && (
@@ -106,6 +112,7 @@ const App = () => {
               className="form-check-input"
               type="checkbox"
               id="sortToggle"
+              disabled={!locationPermission}
               checked={sortByDistance}
               onChange={handleToggleChange}
             />
@@ -113,6 +120,20 @@ const App = () => {
               Sort by Distance
             </label>
           </div>
+          {showLocationAlert && (
+            <div
+              className="alert alert-warning alert-dismissible fade show"
+              role="alert"
+            >
+              Your <strong>location permission</strong> is needed for the sort
+              by geolocation feature.
+              <button
+                type="button"
+                className="btn-close"
+                onClick={handleAlertClose}
+              ></button>
+            </div>
+          )}
         </div>
 
         {clouds ? (
