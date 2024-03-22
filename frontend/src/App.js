@@ -4,42 +4,40 @@ import Select from "react-select";
 
 const App = () => {
   const [clouds, setClouds] = useState([]);
-  const [providers, setProviders] = useState([]);
+  const [allProviders, setAllProviders] = useState([]);
   const [selectedProviders, setSelectedProviders] = useState([]);
 
   const fetchClouds = async () => {
     try {
       const response = await api.get("/clouds/");
-      setProviders(response.data.providers);
+      setAllProviders(response.data.providers);
       setClouds(response.data.clouds);
-      console.log("Providers:", providers);
     } catch (error) {
       console.error("Error fetching clouds:", error);
     }
   };
 
   const fetchCloudsByProvider = async (providers) => {
-    console.log("fetchCloudsByProvider", providers);
     try {
       const response = await api.get("/clouds/", {
-        params: { providers_req: [...providers.value].join(",") },
+        params: {
+          providers_req: providers.map((item) => item.value).join(","),
+        },
       });
-
-      setSelectedProviders(providers);
       setClouds(response.data.clouds);
-      let providers = [];
-      for (let provider of response.data.providers)
-        providers.push({ value: provider, label: provider });
-      setProviders(providers);
     } catch (error) {
       console.error("Error fetching clouds:", error);
     }
   };
 
-  const handleProviderSelect = (providers) => {
-    console.log("Selected Providers:", providers);
-    setSelectedProviders(providers);
-    fetchCloudsByProvider(selectedProviders);
+  const handleProviderSelect = (selectedOptions) => {
+    if (selectedOptions.length > 0) {
+      setSelectedProviders(selectedOptions);
+      fetchCloudsByProvider(selectedOptions);
+    } else {
+      setSelectedProviders([]);
+      fetchCloudsByProvider(allProviders);
+    }
   };
 
   useEffect(() => {
@@ -58,9 +56,9 @@ const App = () => {
       <div className="container mt-4">
         <h1 className="mb-4">Clouds</h1>
 
-        {providers.length > 0 && (
+        {allProviders.length > 0 && (
           <Select
-            options={providers}
+            options={allProviders}
             isMulti
             value={selectedProviders}
             onChange={(selectedOptions) =>

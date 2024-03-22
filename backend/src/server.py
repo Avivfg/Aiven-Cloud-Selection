@@ -30,7 +30,7 @@ class Cloud(BaseModel):
     provider_description: str = Field(description="The cloud provider name.")
     provider: str = Field(description="The cloud provider name (in short).")
 
-clouds = [] # or {} with ids
+clouds = []
 providers = []
 fetched = False # is there a best practice for that?
 
@@ -50,9 +50,12 @@ def fetch_clouds() -> dict:
     errors_list = clouds_json.get("errors", []) # Handle if errors exist
     message = clouds_json.get("message", "") # Handle message if exists
     
-    clouds = clouds_json.get("clouds", [])  # Store fetched clouds globally
-    # providers = list({cloud["provider"] for cloud in clouds})
-    providers = [{"value": provider, "label": provider.capitalize()} for provider in {cloud["provider"] for cloud in clouds}]
+    clouds = clouds_json.get("clouds", [])
+    providers = [
+        {"value": provider, "label": provider.capitalize()} 
+        for provider in {cloud["provider"] for cloud in clouds}
+    ]
+    providers.sort(key=lambda x: x["label"])
 
     print (providers)
     fetched = True
