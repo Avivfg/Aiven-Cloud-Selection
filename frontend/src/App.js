@@ -6,6 +6,21 @@ const App = () => {
   const [clouds, setClouds] = useState([]);
   const [allProviders, setAllProviders] = useState([]);
   const [selectedProviders, setSelectedProviders] = useState([]);
+  const [userLatitude, setUserLatitude] = useState(null);
+  const [userLongitude, setUserLongitude] = useState(null);
+  const [sortByDistance, setSortByDistance] = useState(false);
+
+  const getUserLocation = () => {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLatitude(position.coords.latitude);
+        setUserLongitude(position.coords.longitude);
+      },
+      (error) => {
+        console.error("Error getting user location:", error);
+      }
+    );
+  };
 
   const fetchClouds = async () => {
     try {
@@ -17,13 +32,20 @@ const App = () => {
     }
   };
 
-  const fetchCloudsByProvider = async (providers) => {
+  const fetchCloudsByProvider = async (providers, sort = false) => {
     try {
       const response = await api.get("/clouds/", {
         params: {
           providers_req: providers.map((item) => item.value).join(","),
+          sorted_by_geolocation: sort,
+          user_latitude: userLatitude,
+          user_longitude: userLongitude,
         },
       });
+      console.log(providers.map((item) => item.value).join(","));
+      console.log(sort);
+      console.log(userLatitude);
+      console.log(userLongitude);
       setClouds(response.data.clouds);
     } catch (error) {
       console.error("Error fetching clouds:", error);
@@ -40,7 +62,16 @@ const App = () => {
     }
   };
 
+  const handleToggleChange = () => {
+    fetchCloudsByProvider(
+      selectedProviders.length > 0 ? selectedProviders : allProviders,
+      !sortByDistance
+    );
+    setSortByDistance(!sortByDistance);
+  };
+
   useEffect(() => {
+    getUserLocation();
     fetchClouds();
   }, []);
 
@@ -54,6 +85,8 @@ const App = () => {
         </div>
       </nav>
       <div className="container mt-4">
+        <p>userLatitude is {userLatitude}</p>
+        <p>userLongitude is {userLongitude}</p>
         <h1 className="mb-4">Clouds</h1>
 
         {allProviders.length > 0 && (
@@ -67,6 +100,20 @@ const App = () => {
             placeholder="Select Providers..."
           />
         )}
+        <div className="my-2">
+          <div className="form-check form-switch">
+            <input
+              className="form-check-input"
+              type="checkbox"
+              id="sortToggle"
+              checked={sortByDistance}
+              onChange={handleToggleChange}
+            />
+            <label className="form-check-label" htmlFor="sortToggle">
+              Sort by Distance
+            </label>
+          </div>
+        </div>
 
         {clouds ? (
           <div className="row">
