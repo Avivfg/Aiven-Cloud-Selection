@@ -31,10 +31,12 @@ class Cloud(BaseModel):
     provider: str = Field(description="The cloud provider name (in short).")
 
 clouds = [] # or {} with ids
+providers = []
 fetched = False # is there a best practice for that?
 
 def fetch_clouds() -> dict:
     global clouds
+    global providers
     global fetched
     if fetched: 
         return {"fetched": clouds}
@@ -49,8 +51,11 @@ def fetch_clouds() -> dict:
     message = clouds_json.get("message", "") # Handle message if exists
     
     clouds = clouds_json.get("clouds", [])  # Store fetched clouds globally
+    # providers = list({cloud["provider"] for cloud in clouds})
+    providers = [{"value": provider, "label": provider.capitalize()} for provider in {cloud["provider"] for cloud in clouds}]
+
+    print (providers)
     fetched = True
-    
     return {"fetched": clouds}
         
 # implement
@@ -59,7 +64,7 @@ def sort_by_geolocation(clouds_list):
 
 @app.get("/clouds/")
 async def get_clouds_list(
-    providers: List[str] = Query(
+    providers_req: Optional[str] = Query(
         None,
         title="Providers", 
         description="List of strings specifying the providers to filter the clouds by.",
@@ -71,13 +76,16 @@ async def get_clouds_list(
     ),
 ):
     clouds_list = fetch_clouds()["fetched"]
+    
     clouds_to_send = []
-    if providers is None:
+    if providers_req is None:
         clouds_to_send = clouds_list
     else:
-        clouds_to_send = [cloud for cloud in clouds_list if cloud["provider"] in providers]
-        
+        clouds_to_send = [cloud for cloud in clouds_list if cloud["provider"] in providers_req.split(",")]
+    
     if sorted_by_geolocation:
         clouds_to_send = sort_by_geolocation(clouds_to_send)
+    
+    
         
-    return {"clouds": clouds_to_send}
+    return {"clouds": clouds_to_send, "providers": providers}

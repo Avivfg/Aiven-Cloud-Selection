@@ -1,27 +1,45 @@
 import React, { useState, useEffect } from "react";
 import api from "./api";
+import Select from "react-select";
 
 const App = () => {
   const [clouds, setClouds] = useState([]);
+  const [providers, setProviders] = useState([]);
+  const [selectedProviders, setSelectedProviders] = useState([]);
 
   const fetchClouds = async () => {
     try {
       const response = await api.get("/clouds/");
+      setProviders(response.data.providers);
       setClouds(response.data.clouds);
+      console.log("Providers:", providers);
     } catch (error) {
       console.error("Error fetching clouds:", error);
     }
   };
 
   const fetchCloudsByProvider = async (providers) => {
+    console.log("fetchCloudsByProvider", providers);
     try {
-      const response = await api.get("/clouds/", { params: { providers } });
+      const response = await api.get("/clouds/", {
+        params: { providers_req: [...providers.value].join(",") },
+      });
+
+      setSelectedProviders(providers);
       setClouds(response.data.clouds);
-      console.log("clicked");
-      console.log(clouds);
+      let providers = [];
+      for (let provider of response.data.providers)
+        providers.push({ value: provider, label: provider });
+      setProviders(providers);
     } catch (error) {
       console.error("Error fetching clouds:", error);
     }
+  };
+
+  const handleProviderSelect = (providers) => {
+    console.log("Selected Providers:", providers);
+    setSelectedProviders(providers);
+    fetchCloudsByProvider(selectedProviders);
   };
 
   useEffect(() => {
@@ -35,17 +53,23 @@ const App = () => {
           <a className="navbar-brand" href="#">
             Aiven Cloud Selection
           </a>
-          <a
-            onClick={() => fetchCloudsByProvider(["google"])}
-            className="navbar-brand"
-            // href=""
-          >
-            only google test
-          </a>
         </div>
       </nav>
       <div className="container mt-4">
         <h1 className="mb-4">Clouds</h1>
+
+        {providers.length > 0 && (
+          <Select
+            options={providers}
+            isMulti
+            value={selectedProviders}
+            onChange={(selectedOptions) =>
+              handleProviderSelect(selectedOptions)
+            }
+            placeholder="Select Providers..."
+          />
+        )}
+
         {clouds ? (
           <div className="row">
             {clouds.map((cloud, index) => (
