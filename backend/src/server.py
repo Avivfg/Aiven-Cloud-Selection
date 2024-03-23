@@ -30,6 +30,16 @@ class Cloud(BaseModel):
     provider_description: str = Field(description="The cloud provider name.")
     provider: str = Field(description="The cloud provider name (in short).")
 
+class Provider:
+    """Representation of a cloud provider fetched from Aiven's API."""
+
+    value: str = Field(description="The cloud provider internal name.")
+    label: str = Field(description="The label name of the cloud provider.")
+    
+    def __init__(self, value, label):
+        self.value = value
+        self.label = label
+
 clouds = []
 providers = []
 fetched = False # is there a best practice for that?
@@ -38,8 +48,7 @@ def fetch_clouds() -> dict:
     global clouds
     global providers
     global fetched
-    if fetched: 
-        return {"fetched": clouds}
+    if fetched: return {"fetched": clouds}
     
     conn = http.client.HTTPSConnection("api.aiven.io")
     conn.request("GET", "/v1/clouds")
@@ -50,12 +59,13 @@ def fetch_clouds() -> dict:
     errors_list = clouds_json.get("errors", []) # Handle if errors exist
     message = clouds_json.get("message", "") # Handle message if exists
     
-    clouds = clouds_json.get("clouds", [])
+    # clouds = clouds_json.get("clouds", [])
+    clouds = [Cloud(**cloud) for cloud in clouds_json.get("clouds", [])]
     providers = [
-        {"value": provider, "label": provider.capitalize()} 
-        for provider in {cloud["provider"] for cloud in clouds}
+        Provider(provider, provider.capitalize())
+        for provider in {cloud.provider for cloud in clouds}
     ]
-    providers.sort(key=lambda x: x["label"])
+    providers.sort(key=lambda provider: provider.label)
     
     fetched = True
     return {"fetched": clouds}
@@ -78,8 +88,8 @@ def sort_by_geolocation(user_latitude, user_longitude, clouds_list):
         key=lambda cloud: haversine(
             user_latitude,
             user_longitude,
-            cloud["geo_latitude"],
-            cloud["geo_longitude"]
+            cloud.geo_latitude,
+            cloud.geo_longitude
         )
     )
 
@@ -112,11 +122,9 @@ async def get_clouds_list(
     if providers_req is None:
         clouds_to_send = clouds_list
     else:
-        clouds_to_send = [cloud for cloud in clouds_list if cloud["provider"] in providers_req.split(",")]
+        clouds_to_send = [cloud for cloud in clouds_list if cloud.provider in providers_req.split(",")]
     if sorted_by_geolocation:
         clouds_to_send = sort_by_geolocation(user_latitude, user_longitude, clouds_to_send)
-    
-    
         
     return {"clouds": clouds_to_send, "providers": providers}
 

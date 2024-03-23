@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import api from "./api";
 import Select from "react-select";
+import "bootstrap/dist/css/bootstrap.min.css";
 
 const App = () => {
   const [clouds, setClouds] = useState([]);
@@ -10,7 +11,7 @@ const App = () => {
   const [userLongitude, setUserLongitude] = useState(null);
   const [sortByDistance, setSortByDistance] = useState(false);
   const [locationPermission, setLocationPermission] = useState(false);
-  const [showLocationAlert, setShowLocationAlert] = useState(false);
+  const [showLocationAlert, setShowLocationAlert] = useState(true);
 
   const getUserLocation = () => {
     navigator.geolocation.getCurrentPosition(
@@ -18,9 +19,10 @@ const App = () => {
         setLocationPermission(true);
         setUserLatitude(position.coords.latitude);
         setUserLongitude(position.coords.longitude);
+        setShowLocationAlert(false);
       },
       (error) => {
-        setShowLocationAlert(true);
+        // setShowLocationAlert(true);
         // console.error("Error getting user location:", error);
       }
     );
@@ -46,10 +48,6 @@ const App = () => {
           user_longitude: userLongitude,
         },
       });
-      console.log(providers.map((item) => item.value).join(","));
-      console.log(sort);
-      console.log(userLatitude);
-      console.log(userLongitude);
       setClouds(response.data.clouds);
     } catch (error) {
       console.error("Error fetching clouds:", error);
@@ -57,20 +55,18 @@ const App = () => {
   };
 
   const handleProviderSelect = (selectedOptions) => {
-    if (selectedOptions.length > 0) {
-      setSelectedProviders(selectedOptions);
-      fetchCloudsByProvider(selectedOptions, sortByDistance);
-    } else {
-      setSelectedProviders([]);
-      fetchCloudsByProvider(allProviders, sortByDistance);
-    }
+    setSelectedProviders(selectedOptions.length > 0 ? selectedOptions : []);
+    fetchCloudsByProvider(
+      selectedOptions.length > 0 ? selectedOptions : allProviders,
+      sortByDistance
+    );
   };
 
   const handleAlertClose = () => {
     setShowLocationAlert(false);
   };
 
-  const handleToggleChange = () => {
+  const handleSortToggleChange = () => {
     fetchCloudsByProvider(
       selectedProviders.length > 0 ? selectedProviders : allProviders,
       !sortByDistance
@@ -106,6 +102,7 @@ const App = () => {
             placeholder="Select Providers..."
           />
         )}
+
         <div className="my-2">
           <div className="form-check form-switch">
             <input
@@ -114,7 +111,7 @@ const App = () => {
               id="sortToggle"
               disabled={!locationPermission}
               checked={sortByDistance}
-              onChange={handleToggleChange}
+              onChange={handleSortToggleChange}
             />
             <label className="form-check-label" htmlFor="sortToggle">
               Sort by Distance
@@ -130,6 +127,7 @@ const App = () => {
               <button
                 type="button"
                 className="btn-close"
+                aria-label="Close"
                 onClick={handleAlertClose}
               ></button>
             </div>
