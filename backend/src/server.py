@@ -60,7 +60,6 @@ def fetch_clouds() -> dict:
     errors_list = clouds_json.get("errors", []) # Handle if errors exist
     message = clouds_json.get("message", "") # Handle message if exists
     
-    # clouds = clouds_json.get("clouds", [])
     clouds = [Cloud(**cloud, cloud_id=i) for i, cloud in enumerate(clouds_json.get("clouds", []))]
     providers = [
         Provider(provider, provider.capitalize())

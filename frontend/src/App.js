@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from "react";
 import api from "./api";
+import Navbar from "./components/Navbar";
+import CloudBox from "./components/CloudBox";
+import GeoSort from "./components/GeoSort";
 import Select from "react-select";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./App.css";
@@ -78,8 +81,6 @@ const App = () => {
     );
   };
 
-  const handleAlertClose = () => setShowLocationAlert(false);
-
   const handleCardClick = (cloudID) => {
     setSelectedClouds(
       cloudSelected(cloudID)
@@ -104,20 +105,18 @@ const App = () => {
     setSelectedClouds([]);
   };
 
-  // To be continue...
+  // To be continue... (not a part of this assignment)
   const handleContinueWithSelection = () => {
     // history.push("/clouds-selection", { selectedPresentedClouds });
   };
 
   return (
-    <div>
-      <nav className="navbar navbar-dark bg-primary">
-        <div className="container-fluid">
-          <a className="navbar-brand" href="">
-            Aiven Cloud Selection
-          </a>
-        </div>
-      </nav>
+    <div className="content">
+      {/* Navbar for the title */}
+      <Navbar />
+
+      {/* Headline, selection count and continue button */}
+      {/* (implementation of the button action is out of scope for this assignment) */}
       <div className="container mt-4">
         <div className="row align-items-center justify-content-between mb-4">
           <div className="col">
@@ -138,17 +137,8 @@ const App = () => {
             </button>
           </div>
         </div>
-        <div className="container mb-2">
-          <button
-            disabled={selectedPresentedClouds.length === 0}
-            className="btn btn-sm btn-primary"
-            onClick={handleCleanUpSelection}
-          >
-            Clean up selection
-          </button>
-        </div>
 
-        {/* Select component */}
+        {/* Search bar for filtering by provider/s */}
         {allProviders.length > 0 && (
           <Select
             options={allProviders}
@@ -161,76 +151,53 @@ const App = () => {
           />
         )}
 
-        <div className="my-2">
-          <div className="form-check form-switch">
-            <input
-              className="form-check-input"
-              type="checkbox"
-              id="sortToggle"
-              disabled={!locationPermission}
-              checked={sortByDistance}
-              onChange={handleSortToggleChange}
-            />
-            <label className="form-check-label" htmlFor="sortToggle">
-              Sort by Distance
-            </label>
-          </div>
-          {showLocationAlert && (
-            <div
-              className="alert alert-warning alert-dismissible fade show"
-              role="alert"
-            >
-              Your <strong>location permission</strong> is needed for the sort
-              by geolocation feature.
-              <button
-                type="button"
-                className="btn-close"
-                aria-label="Close"
-                onClick={handleAlertClose}
-              ></button>
-            </div>
-          )}
+        {/* Sort by distance feature */}
+        <GeoSort
+          locationPermission={locationPermission}
+          sortByDistance={sortByDistance}
+          handleSortToggleChange={handleSortToggleChange}
+          show={showLocationAlert}
+          setShow={setShowLocationAlert}
+        />
+
+        {/* Cleanup selection button */}
+        <div className="container mb-2">
+          <button
+            disabled={selectedPresentedClouds.length === 0}
+            className="btn btn-sm btn-primary"
+            onClick={handleCleanUpSelection}
+          >
+            Clean up selection
+          </button>
         </div>
 
+        {/* Clouds listing */}
         {clouds ? (
           <div className="row">
             {clouds.map((cloud) => (
-              <div className="col-md-4 mb-4" key={cloud.cloud_id}>
-                <div
-                  className={`card ${
-                    cloudSelected(cloud.cloud_id) ? "selected" : ""
-                  }`}
-                  onClick={() => handleCardClick(cloud.cloud_id)}
-                >
-                  <div className="card-body">
-                    {cloudSelected(cloud.cloud_id) && (
-                      <p className="legend-text">Selected</p>
-                    )}
-                    <h5
-                      className={`card-title-${
-                        cloudSelected(cloud.cloud_id) ? "selected" : ""
-                      }`}
-                    >
-                      {cloud.cloud_name}
-                    </h5>
-                    <p className="card-text">{cloud.cloud_description}</p>
-                    <p className="card-text">Latitude: {cloud.geo_latitude}</p>
-                    <p className="card-text">
-                      Longitude: {cloud.geo_longitude}
-                    </p>
-                    <p className="card-text">Region: {cloud.geo_region}</p>
-                    <p className="card-text">Provider: {cloud.provider}</p>
-                    <p className="card-text">
-                      Provider Description: {cloud.provider_description}
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <CloudBox
+                cloud={cloud}
+                key={cloud.cloud_id}
+                selected={cloudSelected(cloud.cloud_id)}
+                handleCardClick={handleCardClick}
+              />
             ))}
           </div>
         ) : (
           <p>Loading...</p>
         )}
+
+        {/* Another continue button for the bottom */}
+        <div className="row align-items-right mb-4">
+          {" "}
+          <button
+            disabled={selectedPresentedClouds.length === 0}
+            className="btn btn-primary btn-lg"
+            onClick={handleContinueWithSelection}
+          >
+            Continue with your selection {">"}
+          </button>
+        </div>
       </div>
     </div>
   );
