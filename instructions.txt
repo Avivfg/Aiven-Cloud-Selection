@@ -1,0 +1,34 @@
+In backend folder:
+
+(consider updating pip if the installation does not work, by:      
+ 	python -m pip install --upgrade pip)
+
+pip install fastapi "uvicorn[standard]" / pip install fastapi[all]
+pip install normalizer
+pip install requests  
+pip install pytest
+
+npm install axios
+npm install bootstrap
+npm install react-router-dom
+npm install react-select
+
+run backend server:
+	navigate to /backend/src, then run:
+		uvicorn server:app --reload    /    python -m uvicorn server:app --reload
+
+run frontend server:
+	navigate to /frontend, then run:
+		npm start
+
+run test:
+	Backend:
+		python -m venv env
+		env/Scripts/activate 
+		pip install fastapi uvicorn
+		pip install httpx
+		pip install pytest
+		-> pytest
+	
+	Frontend:
+		yarn test
