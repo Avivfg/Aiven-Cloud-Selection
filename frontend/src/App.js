@@ -11,7 +11,7 @@ const App = () => {
   const [userLongitude, setUserLongitude] = useState(null);
   const [sortByDistance, setSortByDistance] = useState(false);
   const [locationPermission, setLocationPermission] = useState(false);
-  const [showLocationAlert, setShowLocationAlert] = useState(true);
+  const [showLocationAlert, setShowLocationAlert] = useState(false);
 
   const getUserLocation = () => {
     navigator.geolocation.getCurrentPosition(
@@ -19,36 +19,30 @@ const App = () => {
         setLocationPermission(true);
         setUserLatitude(position.coords.latitude);
         setUserLongitude(position.coords.longitude);
-        setShowLocationAlert(false);
       },
       (error) => {
-        // setShowLocationAlert(true);
+        setShowLocationAlert(true);
         // console.error("Error getting user location:", error);
       }
     );
   };
 
-  const fetchClouds = async () => {
+  const fetchData = async (providers = allProviders, sort = false) => {
     try {
-      const response = await api.get("/clouds/");
+      const reqParams = {};
+      if (providers.length > 0)
+        reqParams["providers_req"] = providers
+          .map((item) => item.value)
+          .join(",");
+      if (sort) {
+        reqParams["sorted_by_geolocation"] = sort;
+        reqParams["user_latitude"] = userLatitude;
+        reqParams["user_longitude"] = userLongitude;
+      }
+      const response = await api.get("/clouds/", { params: reqParams });
+      setClouds(response.data.clouds);
+      if (providers.length == 0) setAllProviders(response.data.providers);
       setAllProviders(response.data.providers);
-      setClouds(response.data.clouds);
-    } catch (error) {
-      console.error("Error fetching clouds:", error);
-    }
-  };
-
-  const fetchCloudsByProvider = async (providers, sort = false) => {
-    try {
-      const response = await api.get("/clouds/", {
-        params: {
-          providers_req: providers.map((item) => item.value).join(","),
-          sorted_by_geolocation: sort,
-          user_latitude: userLatitude,
-          user_longitude: userLongitude,
-        },
-      });
-      setClouds(response.data.clouds);
     } catch (error) {
       console.error("Error fetching clouds:", error);
     }
@@ -56,18 +50,16 @@ const App = () => {
 
   const handleProviderSelect = (selectedOptions) => {
     setSelectedProviders(selectedOptions.length > 0 ? selectedOptions : []);
-    fetchCloudsByProvider(
+    fetchData(
       selectedOptions.length > 0 ? selectedOptions : allProviders,
       sortByDistance
     );
   };
 
-  const handleAlertClose = () => {
-    setShowLocationAlert(false);
-  };
+  const handleAlertClose = () => setShowLocationAlert(false);
 
   const handleSortToggleChange = () => {
-    fetchCloudsByProvider(
+    fetchData(
       selectedProviders.length > 0 ? selectedProviders : allProviders,
       !sortByDistance
     );
@@ -76,7 +68,7 @@ const App = () => {
 
   useEffect(() => {
     getUserLocation();
-    fetchClouds();
+    fetchData();
   }, []);
 
   return (
