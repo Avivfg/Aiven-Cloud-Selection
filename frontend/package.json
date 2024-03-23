@@ -18,7 +18,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "test": "react-scripts test",
+    "test": "jest",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
@@ -40,6 +40,16 @@
     ]
   },
   "devDependencies": {
-    "@types/bootstrap": "^5.2.10"
-  }
+    "@babel/core": "^7.24.3",
+    "@babel/preset-env": "^7.24.3",
+    "@babel/preset-react": "^7.24.1",
+    "@types/bootstrap": "^5.2.10",
+    "babel-jest": "^29.7.0",
+    "jest": "^27.5.1",
+    "ts-node": "^10.9.2"
+  },
+  "presets": [
+    "@babel/preset-env",
+    "@babel/preset-react"
+  ]
 }

@@ -4,8 +4,24 @@ from typing import Optional, List
 from pydantic import BaseModel, Field
 import http.client
 import json
+import logging
 from math import radians, sin, cos, sqrt, atan2
+
+logging.basicConfig(
+    level=logging.INFO, 
+    format="%(asctime)s %(levelname)s %(message)s", 
+    datefmt="%d-%m-%Y %H:%M:%S",
+    filename="logs.log",
+)
+
+# logging.debug('debug message')
+# logging.info('info message')
+# logging.warning('warning message')
+# logging.error('error message')
+# logging.critical('critical message')
+
 app = FastAPI()
+logging.info('Starting FastAPI service')
 
 origins = [
     "http://localhost:3000",
@@ -46,21 +62,36 @@ providers = []
 fetched = False # is there a best practice for that?
 
 def fetch_clouds() -> dict:
+    logging.info('starting clouds fetch..')
     global clouds
     global providers
     global fetched
-    if fetched: return {"fetched": clouds}
+    if fetched: 
+        logging.info('clouds have already been fetched')
+        return {"fetched": clouds}
     
+    logging.info('connecting to Aiven api')
     conn = http.client.HTTPSConnection("api.aiven.io")
     conn.request("GET", "/v1/clouds")
     res = conn.getresponse()
+    logging.info('got the response back from Aiven Api')
     data = res.read().decode("utf-8")
     clouds_json = json.loads(data)
     
-    errors_list = clouds_json.get("errors", []) # Handle if errors exist
-    message = clouds_json.get("message", "") # Handle message if exists
+    errors_list = clouds_json.get("errors", [])
+    if errors_list:
+        logging.error('got errors back with the response')
+        for error in errors_list: 
+            raise HTTPException(status_code=error["status"], detail=error["message"])
+            
+    message = clouds_json.get("message", "")
+    if message:
+        logging.warning('got a message back with the response:', message)
     
+    logging.info('Processing the recieved clouds..')
     clouds = [Cloud(**cloud, cloud_id=i) for i, cloud in enumerate(clouds_json.get("clouds", []))]
+    
+    logging.info('Collecting the cloud providers..')
     providers = [
         Provider(provider, provider.capitalize())
         for provider in {cloud.provider for cloud in clouds}
@@ -68,6 +99,7 @@ def fetch_clouds() -> dict:
     providers.sort(key=lambda provider: provider.label)
     
     fetched = True
+    logging.info('Clouds data fetch is over')
     return {"fetched": clouds}
 
 # This code calculates the distance between two points on Earth's surface.
@@ -83,17 +115,22 @@ def haversine(lat1, lon1, lat2, lon2):
 
 # implement
 def sort_by_geolocation(user_latitude, user_longitude, clouds_list):
-    return sorted(
+    logging.info('Sorting clouds by distance to the user')
+    sorted_clouds = sorted(
         clouds_list,
         key=lambda cloud: haversine(
             user_latitude,
             user_longitude,
             cloud.geo_latitude,
             cloud.geo_longitude
-        )
-    )
+    ))
+    if len(sorted_clouds) != len(clouds_list): 
+        logging.critical('Length of sorted clouds is not equal to length of original clouds list')
+    return sorted_clouds
 
-@app.get("/clouds/")
+@app.get("/clouds/", responses={
+        400: {"description": "Bad Request"},
+    },)
 async def get_clouds_list(
     providers_req: Optional[str] = Query(
         None,
@@ -116,14 +153,18 @@ async def get_clouds_list(
         default=None,
     ),
 ):
+    logging.info('Getting clouds and providers')
     clouds_list = fetch_clouds()["fetched"]
     
     clouds_to_send = []
     if providers_req is None:
         clouds_to_send = clouds_list
     else:
+        logging.info('filtering by the given list of providers')
         clouds_to_send = [cloud for cloud in clouds_list if cloud.provider in providers_req.split(",")]
     if sorted_by_geolocation:
+        if not user_latitude or not user_longitude:
+            raise HTTPException(status_code=400, detail="user latitude and/or longtitue are missing")
         clouds_to_send = sort_by_geolocation(user_latitude, user_longitude, clouds_to_send)
         
     return {"clouds": clouds_to_send, "providers": providers}

@@ -19,7 +19,6 @@ const App = () => {
   const [showLocationAlert, setShowLocationAlert] = useState(false);
   const [selectedClouds, setSelectedClouds] = useState([]); // IDs
   const [selectedPresentedClouds, setSelectedPresentedClouds] = useState([]); // IDs
-  // const history = useHistory();
 
   useEffect(() => {
     getUserLocation();
@@ -51,61 +50,79 @@ const App = () => {
         reqParams["providers_req"] = providers
           .map((item) => item.value)
           .join(",");
+
       if (sort) {
         reqParams["sorted_by_geolocation"] = sort;
         reqParams["user_latitude"] = userLatitude;
         reqParams["user_longitude"] = userLongitude;
       }
+
       const response = await api.get("/clouds/", { params: reqParams });
       setClouds(response.data.clouds);
       if (providers.length === 0) setAllProviders(response.data.providers);
-      setAllProviders(response.data.providers);
     } catch (error) {
-      console.error("Error fetching clouds:", error);
+      console.error(
+        `Error fetching clouds: (status ${error.response.status}): ${error.response.data.detail}`
+      );
     }
   };
 
   const handleProviderSelect = (selectedOptions) => {
-    setSelectedProviders(selectedOptions.length > 0 ? selectedOptions : []);
-    fetchData(
-      selectedOptions.length > 0 ? selectedOptions : allProviders,
-      sortByDistance
-    );
+    try {
+      setSelectedProviders(selectedOptions.length > 0 ? selectedOptions : []);
+      fetchData(
+        selectedOptions.length > 0 ? selectedOptions : allProviders,
+        sortByDistance
+      );
+    } catch (error) {
+      console.error("Error in handleProviderSelect:", error);
+    }
   };
 
   const updateSelectedPresentedClouds = () => {
-    setSelectedPresentedClouds(
-      clouds
-        .filter((cloud) => cloudSelected(cloud.cloud_id))
-        .map((cloud) => cloud.cloud_id)
-    );
+    try {
+      setSelectedPresentedClouds(
+        clouds
+          .filter((cloud) => cloudSelected(cloud.cloud_id))
+          .map((cloud) => cloud.cloud_id)
+      );
+    } catch (error) {
+      console.error("Error in updateSelectedPresentedClouds:", error);
+    }
   };
 
   const handleCardClick = (cloudID) => {
-    setSelectedClouds(
-      cloudSelected(cloudID)
-        ? selectedClouds.filter(
-            (selectedCloudID) => selectedCloudID !== cloudID
-          )
-        : [...selectedClouds, cloudID]
-    );
+    try {
+      setSelectedClouds(
+        cloudSelected(cloudID)
+          ? selectedClouds.filter(
+              (selectedCloudID) => selectedCloudID !== cloudID
+            )
+          : [...selectedClouds, cloudID]
+      );
+    } catch (error) {
+      console.error("Error in handleCardClick:", error);
+    }
   };
 
   const cloudSelected = (cloudID) => selectedClouds.includes(cloudID);
 
   const handleSortToggleChange = () => {
-    fetchData(
-      selectedProviders.length > 0 ? selectedProviders : allProviders,
-      !sortByDistance
-    );
-    setSortByDistance(!sortByDistance);
+    try {
+      fetchData(
+        selectedProviders.length > 0 ? selectedProviders : allProviders,
+        !sortByDistance
+      );
+      setSortByDistance(!sortByDistance);
+    } catch (error) {
+      console.error("Error in handleSortToggleChange:", error);
+    }
   };
 
-  const handleCleanUpSelection = () => {
-    setSelectedClouds([]);
-  };
+  const handleCleanUpSelection = () => setSelectedClouds([]);
 
-  // To be continue... (not a part of this assignment)
+  /* To be continue... (not a part of this assignment): */
+  // const history = useHistory();
   const handleContinueWithSelection = () => {
     // history.push("/clouds-selection", { selectedPresentedClouds });
   };
