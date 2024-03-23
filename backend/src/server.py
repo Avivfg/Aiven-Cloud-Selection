@@ -25,6 +25,7 @@ logging.info('Starting FastAPI service')
 
 origins = [
     "http://localhost:3000",
+    "https://aiven-cloud-selection.vercel.app"
 ]
 
 app.add_middleware(
