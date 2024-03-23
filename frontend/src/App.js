@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import api from "./api";
 import Select from "react-select";
 import "bootstrap/dist/css/bootstrap.min.css";
+import "./App.css";
+// import { useHistory } from "react-router-dom";
 
 const App = () => {
   const [clouds, setClouds] = useState([]);
@@ -12,6 +14,18 @@ const App = () => {
   const [sortByDistance, setSortByDistance] = useState(false);
   const [locationPermission, setLocationPermission] = useState(false);
   const [showLocationAlert, setShowLocationAlert] = useState(false);
+  const [selectedClouds, setSelectedClouds] = useState([]); // IDs
+  const [selectedPresentedClouds, setSelectedPresentedClouds] = useState([]); // IDs
+  // const history = useHistory();
+
+  useEffect(() => {
+    getUserLocation();
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    updateSelectedPresentedClouds();
+  }, [selectedClouds, clouds]);
 
   const getUserLocation = () => {
     navigator.geolocation.getCurrentPosition(
@@ -41,7 +55,7 @@ const App = () => {
       }
       const response = await api.get("/clouds/", { params: reqParams });
       setClouds(response.data.clouds);
-      if (providers.length == 0) setAllProviders(response.data.providers);
+      if (providers.length === 0) setAllProviders(response.data.providers);
       setAllProviders(response.data.providers);
     } catch (error) {
       console.error("Error fetching clouds:", error);
@@ -56,7 +70,27 @@ const App = () => {
     );
   };
 
+  const updateSelectedPresentedClouds = () => {
+    setSelectedPresentedClouds(
+      clouds
+        .filter((cloud) => cloudSelected(cloud.cloud_id))
+        .map((cloud) => cloud.cloud_id)
+    );
+  };
+
   const handleAlertClose = () => setShowLocationAlert(false);
+
+  const handleCardClick = (cloudID) => {
+    setSelectedClouds(
+      cloudSelected(cloudID)
+        ? selectedClouds.filter(
+            (selectedCloudID) => selectedCloudID !== cloudID
+          )
+        : [...selectedClouds, cloudID]
+    );
+  };
+
+  const cloudSelected = (cloudID) => selectedClouds.includes(cloudID);
 
   const handleSortToggleChange = () => {
     fetchData(
@@ -66,23 +100,55 @@ const App = () => {
     setSortByDistance(!sortByDistance);
   };
 
-  useEffect(() => {
-    getUserLocation();
-    fetchData();
-  }, []);
+  const handleCleanUpSelection = () => {
+    setSelectedClouds([]);
+  };
+
+  // To be continue...
+  const handleContinueWithSelection = () => {
+    // history.push("/clouds-selection", { selectedPresentedClouds });
+  };
 
   return (
     <div>
       <nav className="navbar navbar-dark bg-primary">
         <div className="container-fluid">
-          <a className="navbar-brand" href="#">
+          <a className="navbar-brand" href="">
             Aiven Cloud Selection
           </a>
         </div>
       </nav>
       <div className="container mt-4">
-        <h1 className="mb-4">Clouds</h1>
+        <div className="row align-items-center justify-content-between mb-4">
+          <div className="col">
+            <h1>
+              {selectedPresentedClouds.length === 1
+                ? "1 Selected cloud"
+                : `${selectedPresentedClouds.length} Selected clouds`}
+            </h1>
+          </div>
+          <div className="col-auto">
+            {" "}
+            <button
+              disabled={selectedPresentedClouds.length === 0}
+              className="btn btn-primary btn-lg"
+              onClick={handleContinueWithSelection}
+            >
+              Continue {">"}
+            </button>
+          </div>
+        </div>
+        <div className="container mb-2">
+          <button
+            disabled={selectedPresentedClouds.length === 0}
+            className="btn btn-sm btn-primary"
+            onClick={handleCleanUpSelection}
+          >
+            Clean up selection
+          </button>
+        </div>
 
+        {/* Select component */}
         {allProviders.length > 0 && (
           <Select
             options={allProviders}
@@ -128,11 +194,25 @@ const App = () => {
 
         {clouds ? (
           <div className="row">
-            {clouds.map((cloud, index) => (
-              <div className="col-md-4 mb-4" key={index}>
-                <div className="card">
+            {clouds.map((cloud) => (
+              <div className="col-md-4 mb-4" key={cloud.cloud_id}>
+                <div
+                  className={`card ${
+                    cloudSelected(cloud.cloud_id) ? "selected" : ""
+                  }`}
+                  onClick={() => handleCardClick(cloud.cloud_id)}
+                >
                   <div className="card-body">
-                    <h5 className="card-title">{cloud.cloud_name}</h5>
+                    {cloudSelected(cloud.cloud_id) && (
+                      <p className="legend-text">Selected</p>
+                    )}
+                    <h5
+                      className={`card-title-${
+                        cloudSelected(cloud.cloud_id) ? "selected" : ""
+                      }`}
+                    >
+                      {cloud.cloud_name}
+                    </h5>
                     <p className="card-text">{cloud.cloud_description}</p>
                     <p className="card-text">Latitude: {cloud.geo_latitude}</p>
                     <p className="card-text">

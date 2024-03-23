@@ -29,6 +29,7 @@ class Cloud(BaseModel):
     geo_region: str = Field(description="The geographic continent where the cloud is located.")
     provider_description: str = Field(description="The cloud provider name.")
     provider: str = Field(description="The cloud provider name (in short).")
+    cloud_id: int = Field(description="Internal backend dloud id generated upen fetching the data.")
 
 class Provider:
     """Representation of a cloud provider fetched from Aiven's API."""
@@ -60,7 +61,7 @@ def fetch_clouds() -> dict:
     message = clouds_json.get("message", "") # Handle message if exists
     
     # clouds = clouds_json.get("clouds", [])
-    clouds = [Cloud(**cloud) for cloud in clouds_json.get("clouds", [])]
+    clouds = [Cloud(**cloud, cloud_id=i) for i, cloud in enumerate(clouds_json.get("clouds", []))]
     providers = [
         Provider(provider, provider.capitalize())
         for provider in {cloud.provider for cloud in clouds}
