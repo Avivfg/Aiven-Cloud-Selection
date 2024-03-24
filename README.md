@@ -9,6 +9,10 @@ Hence, the URL above will redirect you to the TS version I just implemented.
 
 Sorry for the mistake, which doubled my work, but hey, now I also demonstrated my JS skills (and provided you an easy-to-read version of the app).
 
+_The only thing left behind, for now, is the frontend testing, but I will provide that soon as well._
+
+_(The commits here (https://github.com/Avivfg/Aiven-Cloud-Selection/commits/main/) show that I made all this in 3 days)_
+
 -----
 ## About the code
 ### Backend
